@@ -1,4 +1,4 @@
-package simplersa
+package lib_simplersa
 
 import (
 	"crypto"

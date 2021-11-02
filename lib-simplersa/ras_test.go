@@ -1,4 +1,4 @@
-package simplersa
+package lib_simplersa
 
 import (
 	"crypto/rand"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestKeyGenerationSimple(t *testing.T) {
-	size := 1024
+	size := 2048
 	if testing.Short() {
 		size = 128
 	}
@@ -165,8 +165,8 @@ func init() {
 	test2048Key.Precompute()
 }
 
-func BenchmarkGenerateKey(b *testing.B) {
-	size := 4096
+func Benchmark2048GenerateKey(b *testing.B) {
+	size := 2048
 	if testing.Short() {
 		size = 128
 	}
