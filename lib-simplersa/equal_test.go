@@ -7,13 +7,13 @@ import (
 )
 
 func TestEqual(t *testing.T) {
-	private, _ := simplersa.GenerateKey(rand.Reader, 512)
+	private, _ := GenerateKey(rand.Reader, 512)
 	public := &private.PublicKey
 
 	if !public.Equal(public) {
 		t.Errorf("public key is not equal to itself: %v", public)
 	}
-	if !public.Equal(crypto.Signer(private).Public().(*simplersa.PublicKey)) {
+	if !public.Equal(crypto.Signer(private).Public().(*PublicKey)) {
 		t.Errorf("private.Public() is not Equal to public: %q", public)
 	}
 	if !private.Equal(private) {
@@ -35,7 +35,7 @@ func TestEqual(t *testing.T) {
 	//	t.Errorf("private key is not equal to itself after decoding: %v", private)
 	//}
 
-	other, _ := simplersa.GenerateKey(rand.Reader, 512)
+	other, _ := GenerateKey(rand.Reader, 512)
 	if public.Equal(other.Public()) {
 		t.Errorf("different public keys are Equal")
 	}

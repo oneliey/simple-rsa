@@ -270,8 +270,7 @@ func GenerateMultiPrimeKey(random io.Reader, nprimes, bits int) (priv *PrivateKe
 // c = RSAEP((n, e), m)
 func encrypt(pub *PublicKey, m *big.Int) (c *big.Int) {
 	e := big.NewInt(int64(pub.E))
-	c = new(big.Int).Exp(m, e, pub.N)
-	return c
+	return new(big.Int).Exp(m, e, pub.N)
 }
 
 // m = RSADP ((n, d), c).
