@@ -26,11 +26,51 @@ func TestHash(t *testing.T) {
 	} else {
 		t.Errorf("Write & Sum is Bad")
 	}
-	if subtle.ConstantTimeCompare(H2, H[:]) == 1 {
-		t.Log("Only Sum is Same !!!")
+	if subtle.ConstantTimeCompare(H2, H[:]) != 1 {
+		t.Log("Only Sum is Bad")
 	} else {
-		t.Errorf("Only Sum is Bad")
+		t.Errorf("Only Sum is Same !!!")
 	}
+}
+
+func TestPow(t *testing.T) {
+	bigZero, bigOne, bigTwo := big.NewInt(0), big.NewInt(1), big.NewInt(2)
+	p1, _ := rand.Prime(rand.Reader, 512)
+	p2, _ := rand.Prime(rand.Reader, 1024)
+	p3, _ := rand.Prime(rand.Reader, 1536)
+	n1, _ := rand.Int(rand.Reader, p1)
+	n2, _ := rand.Int(rand.Reader, p2)
+	n3, _ := rand.Int(rand.Reader, p3)
+
+	var powTestCases = []struct {
+		x, y, m *big.Int
+	}{
+		{bigOne, bigZero, bigOne},
+		{bigOne, bigOne, bigOne},
+		{bigOne, bigZero, bigTwo},
+		{bigTwo, bigZero, bigTwo},
+		{bigTwo, bigOne, bigTwo},
+		{p1, p2, p3},
+		{p1, new(big.Int).Neg(p2), p3},
+		{p1, p3, p2},
+		{p2, new(big.Int).Neg(p1), p3},
+		{p2, p1, p3},
+		{p2, new(big.Int).Neg(p3), p1},
+		{p2, p3, p1},
+		{p3, p2, p1},
+		{p1, p2, n1},
+		{p1, p2, n2},
+		{p1, p2, n3},
+	}
+	for i, test := range powTestCases {
+		x, y, m := test.x, test.y, test.m
+		rE := new(big.Int).Exp(x, y, m)
+		rP := Pow(x, y, m)
+		if rE.Cmp(rP) != 0 {
+			t.Errorf("#%d: bad result, calculate Pow(%v, %v, %v),  wanted: %v, got: %v", i, x, y, m, rE, rP)
+		}
+	}
+
 }
 
 func TestExgcd(t *testing.T) {
@@ -77,17 +117,19 @@ func TestRandomPrime(t *testing.T) {
 		t.Errorf("Return no err when random prime with bits < 2")
 	}
 
-	size := 2048
+	size, times := 1024, 100
 	if testing.Short() {
 		size = 128
 	}
 
-	prime, err := randomPrime(rand.Reader, size)
-	if err != nil {
-		t.Errorf("failed to random a prime: %s", err)
-	} else {
-		if prime.ProbablyPrime(20) == false {
-			t.Errorf("the random number is not a prime")
+	for i := 0; i < times; i++ {
+		prime, err := randomPrime(rand.Reader, size)
+		if err != nil {
+			t.Errorf("failed to random a prime: %s", err)
+		} else {
+			if prime.ProbablyPrime(20) == false {
+				t.Errorf("the random number is not a prime")
+			}
 		}
 	}
 }

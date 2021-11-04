@@ -10,9 +10,6 @@ import (
 	"math/big"
 )
 
-var bigZero = big.NewInt(0)
-var bigOne = big.NewInt(1)
-
 var (
 	ErrGenerateMultiPrimeKey = errors.New("simple_rsa: GenerateMultiPrimeKey requires nprimes >= 2")
 	ErrMessageTooLong        = errors.New("simple_rsa: message too long for RSA public key size")
@@ -270,7 +267,8 @@ func GenerateMultiPrimeKey(random io.Reader, nprimes, bits int) (priv *PrivateKe
 // c = RSAEP((n, e), m)
 func encrypt(pub *PublicKey, m *big.Int) (c *big.Int) {
 	e := big.NewInt(int64(pub.E))
-	return new(big.Int).Exp(m, e, pub.N)
+	//return new(big.Int).Exp(m, e, pub.N)
+	return Pow(m, e, pub.N)
 }
 
 // m = RSADP ((n, d), c).

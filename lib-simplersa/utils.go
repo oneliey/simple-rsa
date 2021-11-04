@@ -8,6 +8,9 @@ import (
 	"math/rand"
 )
 
+var bigZero = big.NewInt(0)
+var bigOne = big.NewInt(1)
+
 var smallPrimes = []uint8{
 	3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53,
 }
@@ -142,6 +145,49 @@ func probablyPrimeMillerRabin(n *big.Int, testTimes int, force2 bool) bool {
 		}
 	}
 	return true
+}
+
+func Pow(x, y, m *big.Int) *big.Int {
+	if m == nil || m.Cmp(bigZero) == 0 {
+		return nil
+	} else if m.Cmp(bigZero) < 0 {
+		m = new(big.Int).Neg(m)
+	}
+
+	if y.Cmp(bigZero) < 0 {
+		// for y < 0: x**y mod m == (x**(-1))**|y| mod m
+		xInv := modMultiInverse(x, m)
+		if xInv == nil {
+			return nil
+		}
+		x, y = xInv, new(big.Int).Neg(y)
+	}
+
+	// x**y mod 1 == 0
+	if m.Cmp(bigOne) == 0 {
+		return big.NewInt(0)
+	}
+	// x**0 == 1
+	if y.Cmp(bigZero) == 0 {
+		return big.NewInt(1)
+	}
+	// x**1 mod m == x mod m
+	if y.Cmp(bigOne) == 0 {
+		return new(big.Int).Mod(x, m)
+	}
+
+	z, bigTwo := big.NewInt(1), big.NewInt(2)
+	x, y = new(big.Int).Set(x), new(big.Int).Set(y)
+
+	for y.Cmp(bigZero) > 0 {
+		if new(big.Int).Mod(y, bigTwo).Cmp(bigOne) == 0 {
+			z = z.Mul(z, x).Mod(z, m)
+		}
+		x = x.Mul(x, x).Mod(x, m)
+		y = y.Rsh(y, 1)
+	}
+
+	return z
 }
 
 func exGcd(A, B, x, y *big.Int) (d *big.Int) {
