@@ -3,10 +3,10 @@ package main
 import (
 	"crypto"
 	"crypto/rand"
-	"crypto/sha256"
 	"embed"
 	"encoding/hex"
 	"fmt"
+	"github.com/zserge/lorca"
 	"log"
 	"net"
 	"net/http"
@@ -14,8 +14,6 @@ import (
 	"os/signal"
 	"runtime"
 	rsa "simple-rsa/lib-simplersa"
-
-	"github.com/zserge/lorca"
 )
 
 //go:embed www
@@ -73,74 +71,98 @@ var (
 	VerifyFalse = "❌ Signature is Wrong ⛔⛔⛔ "
 )
 
-func Encrypt(plaintext string, isUseOAEP bool, OAEPLabel string) string {
+var str2hash map[string]crypto.Hash
+
+func getCryptoHash(hashName string) crypto.Hash {
+	if str2hash == nil {
+		str2hash = make(map[string]crypto.Hash)
+		for h := crypto.MD4; h <= crypto.BLAKE2b_512; h++ {
+			str2hash[h.String()] = h
+		}
+	}
+	if hash, ok := str2hash[hashName]; ok {
+		return hash
+	} else {
+		return crypto.SHA256
+	}
+}
+
+func Encrypt(plaintext string, isUseOAEP bool, OAEPLabel string, hashName string) string {
 	if priv == nil {
 		return ErrNoKey
 	}
-	var ciphertext []byte
-	var err error
-	msg, rng := []byte(plaintext), rand.Reader
+	var (
+		ciphertext []byte
+		err        error
+	)
+
+	msg, rng, hash := []byte(plaintext), rand.Reader, getCryptoHash(hashName)
 	if isUseOAEP {
 		var label []byte
 		if OAEPLabel != "" {
 			label = []byte(OAEPLabel)
 		}
-		if label == nil {
-			fmt.Println("label is nil")
-		}
-		fmt.Println("OAEPLabel", OAEPLabel, "label", label)
-		ciphertext, err = rsa.EncryptOAEP(sha256.New(), rng, &priv.PublicKey, msg, label)
+		ciphertext, err = rsa.EncryptOAEP(hash.New(), rng, &priv.PublicKey, msg, label)
 	} else {
 		ciphertext, err = rsa.EncryptPKCS1v15(rng, &priv.PublicKey, msg)
 	}
 	if err != nil {
 		return ErrEncrypt
 	}
+
 	return fmt.Sprintf("%x", ciphertext)
 }
 
-func Decrypt(c string, isUseOAEP bool, OAEPLabel string) string {
+func Decrypt(c string, isUseOAEP bool, OAEPLabel string, hashName string) string {
 	if priv == nil {
 		return ErrNoKey
 	}
-	var plaintext []byte
-	var err error
+	var (
+		plaintext []byte
+		err       error
+	)
 	ciphertext, err := hex.DecodeString(c)
 	if err != nil {
 		return ""
 	}
-	rng := rand.Reader
+
+	rng, hash := rand.Reader, getCryptoHash(hashName)
 	if isUseOAEP {
 		var label []byte
 		if OAEPLabel != "" {
 			label = []byte(OAEPLabel)
 		}
-		if label == nil {
-			fmt.Println("label is nil")
-		}
-		fmt.Println("OAEPLabel", OAEPLabel, "label", label)
-		plaintext, err = rsa.DecryptOAEP(sha256.New(), rng, priv, ciphertext, label)
+		plaintext, err = rsa.DecryptOAEP(hash.New(), rng, priv, ciphertext, label)
 	} else {
 		plaintext, err = rsa.DecryptPKCS1v15(rng, priv, ciphertext)
 	}
 	if err != nil {
 		return ErrDecrypt
 	}
+
 	return fmt.Sprintf("%s", plaintext)
 }
 
-func Sign(plaintext string, isUsePSS bool) string {
+func Sign(plaintext string, hashName string, isUsePSS bool, saltLength int) string {
 	if priv == nil {
 		return ErrNoKey
 	}
-	msg, rng := []byte(plaintext), rand.Reader
+	msg, rng, hash := []byte(plaintext), rand.Reader, getCryptoHash(hashName)
 	var signature []byte
 	var err error
-	digest := sha256.Sum256(msg)
+	//fmt.Println("Sign: hashName", hashName,hash.String(), "isUsePSS", isUsePSS, "saltLength", saltLength)
+
+	hashFunc := hash.New()
+	hashFunc.Write(msg)
+	digest := hashFunc.Sum(nil)
+
 	if isUsePSS {
-		signature, err = rsa.SignPKCS1v15(rng, priv, crypto.SHA256, digest[:])
+		if saltLength < -1 {
+			saltLength = 0
+		}
+		signature, err = rsa.SignPSS(rng, priv, hash, digest[:], &rsa.PSSOptions{SaltLength: saltLength, Hash: hash})
 	} else {
-		signature, err = rsa.SignPKCS1v15(rng, priv, crypto.SHA256, digest[:])
+		signature, err = rsa.SignPKCS1v15(rng, priv, hash, digest[:])
 	}
 	if err != nil {
 		return ErrSign
@@ -148,22 +170,29 @@ func Sign(plaintext string, isUsePSS bool) string {
 	return fmt.Sprintf("%x", signature)
 }
 
-func Verify(plaintext string, signature string, isUsePSS bool) string {
+func Verify(plaintext string, signature string, hashName string, isUsePSS bool, saltLength int) string {
 	if priv == nil {
 		return ErrNoKey
 	}
 	var err error
-	msg := []byte(plaintext)
+	msg, hash := []byte(plaintext), getCryptoHash(hashName)
 	sig, err := hex.DecodeString(signature)
 	if err != nil {
 		return VerifyFalse
 	}
+	//fmt.Println("Verify: hashName", hashName, hash.String(), "isUsePSS", isUsePSS, "saltLength", saltLength)
 
-	digest := sha256.Sum256(msg)
+	hashFunc := hash.New()
+	hashFunc.Write(msg)
+	digest := hashFunc.Sum(nil)
+
 	if isUsePSS {
-		err = rsa.VerifyPKCS1v15(&priv.PublicKey, crypto.SHA256, digest[:], sig)
+		if saltLength < -1 {
+			saltLength = 0
+		}
+		err = rsa.VerifyPSS(&priv.PublicKey, hash, digest[:], sig, &rsa.PSSOptions{SaltLength: saltLength, Hash: hash})
 	} else {
-		err = rsa.VerifyPKCS1v15(&priv.PublicKey, crypto.SHA256, digest[:], sig)
+		err = rsa.VerifyPKCS1v15(&priv.PublicKey, hash, digest[:], sig)
 	}
 	if err != nil {
 		return VerifyFalse

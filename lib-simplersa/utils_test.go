@@ -1,11 +1,37 @@
 package lib_simplersa
 
 import (
+	"crypto"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"fmt"
 	"math/big"
 	"testing"
 )
+
+func TestHash(t *testing.T) {
+	text := []byte("testing")
+	hash := crypto.SHA256
+	hashFunc := hash.New()
+
+	hashFunc.Write(text)
+	H1 := hashFunc.Sum(nil)
+
+	H2 := hash.New().Sum(text)
+
+	H := sha256.Sum256(text)
+	if subtle.ConstantTimeCompare(H1, H[:]) == 1 {
+		t.Log("Write & Sum is Same !!!")
+	} else {
+		t.Errorf("Write & Sum is Bad")
+	}
+	if subtle.ConstantTimeCompare(H2, H[:]) == 1 {
+		t.Log("Only Sum is Same !!!")
+	} else {
+		t.Errorf("Only Sum is Bad")
+	}
+}
 
 func TestExgcd(t *testing.T) {
 	bigZero, bigOne := big.NewInt(0), big.NewInt(1)
