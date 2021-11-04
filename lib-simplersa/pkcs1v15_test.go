@@ -2,8 +2,12 @@ package lib_simplersa
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/rand"
+	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"io"
 	"math/big"
 	"testing"
@@ -109,24 +113,24 @@ func TestEncryptPKCS1v15(t *testing.T) {
 }
 
 // These test vectors were generated with `openssl rsautl -pkcs -encrypt`
-var decryptPKCS1v15SessionKeyTests = []DecryptPKCS1v15Test{
-	{
-		"e6ukkae6Gykq0fKzYwULpZehX+UPXYzMoB5mHQUDEiclRbOTqas4Y0E6nwns1BBpdvEJcilhl5zsox/6DtGsYg==",
-		"1234",
-	},
-	{
-		"Dtis4uk/q/LQGGqGk97P59K03hkCIVFMEFZRgVWOAAhxgYpCRG0MX2adptt92l67IqMki6iVQyyt0TtX3IdtEw==",
-		"FAIL",
-	},
-	{
-		"LIyFyCYCptPxrvTxpol8F3M7ZivlMsf53zs0vHRAv+rDIh2YsHS69ePMoPMe3TkOMZ3NupiL3takPxIs1sK+dw==",
-		"abcd",
-	},
-	{
-		"bafnobel46bKy76JzqU/RIVOH0uAYvzUtauKmIidKgM0sMlvobYVAVQPeUQ/oTGjbIZ1v/6Gyi5AO4DtHruGdw==",
-		"FAIL",
-	},
-}
+//var decryptPKCS1v15SessionKeyTests = []DecryptPKCS1v15Test{
+//	{
+//		"e6ukkae6Gykq0fKzYwULpZehX+UPXYzMoB5mHQUDEiclRbOTqas4Y0E6nwns1BBpdvEJcilhl5zsox/6DtGsYg==",
+//		"1234",
+//	},
+//	{
+//		"Dtis4uk/q/LQGGqGk97P59K03hkCIVFMEFZRgVWOAAhxgYpCRG0MX2adptt92l67IqMki6iVQyyt0TtX3IdtEw==",
+//		"FAIL",
+//	},
+//	{
+//		"LIyFyCYCptPxrvTxpol8F3M7ZivlMsf53zs0vHRAv+rDIh2YsHS69ePMoPMe3TkOMZ3NupiL3takPxIs1sK+dw==",
+//		"abcd",
+//	},
+//	{
+//		"bafnobel46bKy76JzqU/RIVOH0uAYvzUtauKmIidKgM0sMlvobYVAVQPeUQ/oTGjbIZ1v/6Gyi5AO4DtHruGdw==",
+//		"FAIL",
+//	},
+//}
 
 //func TestEncryptPKCS1v15SessionKey(t *testing.T) {
 //	for i, test := range decryptPKCS1v15SessionKeyTests {
@@ -184,38 +188,38 @@ var signPKCS1v15Tests = []signPKCS1v15Test{
 	{"Test.\n", "a4f3fa6ea93bcdd0c57be020c1193ecbfd6f200a3d95c409769b029578fa0e336ad9a347600e40d3ae823b8c7e6bad88cc07c1d54c3a1523cbbb6d58efc362ae"},
 }
 
-//func TestSignPKCS1v15(t *testing.T) {
-//	for i, test := range signPKCS1v15Tests {
-//		h := sha1.New()
-//		h.Write([]byte(test.in))
-//		digest := h.Sum(nil)
-//
-//		s, err := SignPKCS1v15(nil, rsaPrivateKey, crypto.SHA1, digest)
-//		if err != nil {
-//			t.Errorf("#%d %s", i, err)
-//		}
-//
-//		expected, _ := hex.DecodeString(test.out)
-//		if !bytes.Equal(s, expected) {
-//			t.Errorf("#%d got: %x want: %x", i, s, expected)
-//		}
-//	}
-//}
+func TestSignPKCS1v15(t *testing.T) {
+	for i, test := range signPKCS1v15Tests {
+		h := sha1.New()
+		h.Write([]byte(test.in))
+		digest := h.Sum(nil)
 
-//func TestVerifyPKCS1v15(t *testing.T) {
-//	for i, test := range signPKCS1v15Tests {
-//		h := sha1.New()
-//		h.Write([]byte(test.in))
-//		digest := h.Sum(nil)
-//
-//		sig, _ := hex.DecodeString(test.out)
-//
-//		err := VerifyPKCS1v15(&rsaPrivateKey.PublicKey, crypto.SHA1, digest, sig)
-//		if err != nil {
-//			t.Errorf("#%d %s", i, err)
-//		}
-//	}
-//}
+		s, err := SignPKCS1v15(nil, rsaPrivateKey, crypto.SHA1, digest)
+		if err != nil {
+			t.Errorf("#%d %s", i, err)
+		}
+
+		expected, _ := hex.DecodeString(test.out)
+		if !bytes.Equal(s, expected) {
+			t.Errorf("#%d got: %x want: %x", i, s, expected)
+		}
+	}
+}
+
+func TestVerifyPKCS1v15(t *testing.T) {
+	for i, test := range signPKCS1v15Tests {
+		h := sha1.New()
+		h.Write([]byte(test.in))
+		digest := h.Sum(nil)
+
+		sig, _ := hex.DecodeString(test.out)
+
+		err := VerifyPKCS1v15(&rsaPrivateKey.PublicKey, crypto.SHA1, digest, sig)
+		if err != nil {
+			t.Errorf("#%d %s", i, err)
+		}
+	}
+}
 
 func TestOverlongMessagePKCS1v15(t *testing.T) {
 	ciphertext := decodeBase64("fjOVdirUzFoLlukv80dBllMLjXythIf22feqPrNo0YoIjzyzyoMFiLjAc/Y4krkeZ11XFThIrEvw\nkRiZcCq5ngcccc==")
@@ -225,27 +229,27 @@ func TestOverlongMessagePKCS1v15(t *testing.T) {
 	}
 }
 
-//func TestUnpaddedSignature(t *testing.T) {
-//	msg := []byte("Thu Dec 19 18:06:16 EST 2013\n")
-//	// This base64 value was generated with:
-//	// % echo Thu Dec 19 18:06:16 EST 2013 > /tmp/msg
-//	// % openssl rsautl -sign -inkey key -out /tmp/sig -in /tmp/msg
-//	//
-//	// Where "key" contains the RSA private key given at the bottom of this
-//	// file.
-//	expectedSig := decodeBase64("pX4DR8azytjdQ1rtUiC040FjkepuQut5q2ZFX1pTjBrOVKNjgsCDyiJDGZTCNoh9qpXYbhl7iEym30BWWwuiZg==")
-//
-//	sig, err := SignPKCS1v15(nil, rsaPrivateKey, crypto.Hash(0), msg)
-//	if err != nil {
-//		t.Fatalf("SignPKCS1v15 failed: %s", err)
-//	}
-//	if !bytes.Equal(sig, expectedSig) {
-//		t.Fatalf("signature is not expected value: got %x, want %x", sig, expectedSig)
-//	}
-//	if err := VerifyPKCS1v15(&rsaPrivateKey.PublicKey, crypto.Hash(0), msg, sig); err != nil {
-//		t.Fatalf("signature failed to verify: %s", err)
-//	}
-//}
+func TestUnpaddedSignature(t *testing.T) {
+	msg := []byte("Thu Dec 19 18:06:16 EST 2013\n")
+	// This base64 value was generated with:
+	// % echo Thu Dec 19 18:06:16 EST 2013 > /tmp/msg
+	// % openssl rsautl -sign -inkey key -out /tmp/sig -in /tmp/msg
+	//
+	// Where "key" contains the RSA private key given at the bottom of this
+	// file.
+	expectedSig := decodeBase64("pX4DR8azytjdQ1rtUiC040FjkepuQut5q2ZFX1pTjBrOVKNjgsCDyiJDGZTCNoh9qpXYbhl7iEym30BWWwuiZg==")
+
+	sig, err := SignPKCS1v15(nil, rsaPrivateKey, crypto.Hash(0), msg)
+	if err != nil {
+		t.Fatalf("SignPKCS1v15 failed: %s", err)
+	}
+	if !bytes.Equal(sig, expectedSig) {
+		t.Fatalf("signature is not expected value: got %x, want %x", sig, expectedSig)
+	}
+	if err := VerifyPKCS1v15(&rsaPrivateKey.PublicKey, crypto.Hash(0), msg, sig); err != nil {
+		t.Fatalf("signature failed to verify: %s", err)
+	}
+}
 
 //func TestShortSessionKey(t *testing.T) {
 //	// This tests that attempting to decrypt a session key where the
@@ -290,19 +294,19 @@ var rsaPrivateKey = &PrivateKey{
 	},
 }
 
-//func TestShortPKCS1v15Signature(t *testing.T) {
-//	pub := &PublicKey{
-//		E: 65537,
-//		N: fromBase10("8272693557323587081220342447407965471608219912416565371060697606400726784709760494166080686904546560026343451112103559482851304715739629410219358933351333"),
-//	}
-//	sig, err := hex.DecodeString("193a310d0dcf64094c6e3a00c8219b80ded70535473acff72c08e1222974bb24a93a535b1dc4c59fc0e65775df7ba2007dd20e9193f4c4025a18a7070aee93")
-//	if err != nil {
-//		t.Fatalf("failed to decode signature: %s", err)
-//	}
-//
-//	h := sha256.Sum256([]byte("hello"))
-//	err = VerifyPKCS1v15(pub, crypto.SHA256, h[:], sig)
-//	if err == nil {
-//		t.Fatal("VerifyPKCS1v15 accepted a truncated signature")
-//	}
-//}
+func TestShortPKCS1v15Signature(t *testing.T) {
+	pub := &PublicKey{
+		E: 65537,
+		N: fromBase10("8272693557323587081220342447407965471608219912416565371060697606400726784709760494166080686904546560026343451112103559482851304715739629410219358933351333"),
+	}
+	sig, err := hex.DecodeString("193a310d0dcf64094c6e3a00c8219b80ded70535473acff72c08e1222974bb24a93a535b1dc4c59fc0e65775df7ba2007dd20e9193f4c4025a18a7070aee93")
+	if err != nil {
+		t.Fatalf("failed to decode signature: %s", err)
+	}
+
+	h := sha256.Sum256([]byte("hello"))
+	err = VerifyPKCS1v15(pub, crypto.SHA256, h[:], sig)
+	if err == nil {
+		t.Fatal("VerifyPKCS1v15 accepted a truncated signature")
+	}
+}
