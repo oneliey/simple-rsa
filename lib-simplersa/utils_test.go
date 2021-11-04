@@ -109,8 +109,8 @@ func BenchmarkRandomPrime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		//randomPrime(rand.Reader, 128)
 		//randomPrime(rand.Reader, 1024)
-		//randomPrime(rand.Reader, 2048)
-		randomPrime(rand.Reader, 4096)
+		randomPrime(rand.Reader, 2048)
+		//randomPrime(rand.Reader, 4096)
 		//if _, err := randomPrime(rand.Reader, 2048); err != nil {
 		//	b.Fatal("random prime err:", err)
 		//}
@@ -121,8 +121,8 @@ func BenchmarkStdRandomPrime(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		//rand.Prime(rand.Reader, 128)
-		rand.Prime(rand.Reader, 1024)
-		//rand.Prime(rand.Reader, 2048)
+		//rand.Prime(rand.Reader, 1024)
+		rand.Prime(rand.Reader, 2048)
 		//rand.Prime(rand.Reader, 4096)
 		//if _, err := rand.Prime(rand.Reader, 2048); err != nil {
 		//	b.Fatal("random prime err:", err)
