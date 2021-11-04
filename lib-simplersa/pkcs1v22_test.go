@@ -2,6 +2,8 @@ package lib_simplersa
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -265,4 +267,92 @@ func ExampleDecryptOAEP() {
 	// Remember that encryption only provides confidentiality. The
 	// ciphertext should be signed before authenticity is assumed and, even
 	// then, consider that messages might be reordered.
+}
+
+func TestPSSSigning(t *testing.T) {
+	var saltLengthCombinations = []struct {
+		signSaltLength, verifySaltLength int
+		good                             bool
+	}{
+		{PSSSaltLengthAuto, PSSSaltLengthAuto, true},
+		{PSSSaltLengthAuto, PSSSaltLengthEqualsHash, false},
+		{PSSSaltLengthAuto, 8, false},
+		{PSSSaltLengthEqualsHash, PSSSaltLengthAuto, true},
+		{PSSSaltLengthEqualsHash, PSSSaltLengthEqualsHash, true},
+		{PSSSaltLengthEqualsHash, 8, false},
+		{8, 8, true},
+	}
+
+	hash := crypto.MD5
+	h := md5.New()
+	h = hash.New()
+	h.Write([]byte("testing"))
+	hashed := h.Sum(nil)
+	var opts PSSOptions
+
+	for i, test := range saltLengthCombinations {
+		opts.SaltLength = test.signSaltLength
+		sig, err := SignPSS(rand.Reader, rsaPrivateKey, hash, hashed, &opts)
+		if err != nil {
+			t.Errorf("#%d: error while signing: %s", i, err)
+			continue
+		}
+
+		opts.SaltLength = test.verifySaltLength
+		err = VerifyPSS(&rsaPrivateKey.PublicKey, hash, hashed, sig, &opts)
+		if (err == nil) != test.good {
+			t.Errorf("#%d: bad result, wanted: %t, got: %s", i, test.good, err)
+		}
+	}
+}
+
+func TestSignWithPSSSaltLengthAuto(t *testing.T) {
+	key, err := GenerateKey(rand.Reader, 513)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256([]byte("message"))
+	signature, err := key.Sign(rand.Reader, digest[:], &PSSOptions{
+		SaltLength: PSSSaltLengthAuto,
+		Hash:       crypto.SHA256,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(signature) == 0 {
+		t.Fatal("empty signature returned")
+	}
+}
+
+func TestPSSNilOpts(t *testing.T) {
+	hash := crypto.SHA256
+	h := hash.New()
+	h.Write([]byte("testing"))
+	hashed := h.Sum(nil)
+
+	SignPSS(rand.Reader, rsaPrivateKey, hash, hashed, nil)
+}
+
+// TestPSSOpenSSL ensures that we can verify a PSS signature from OpenSSL with
+// the default options. OpenSSL sets the salt length to be maximal.
+func TestPSSOpenSSL(t *testing.T) {
+	hash := crypto.SHA256
+	h := hash.New()
+	h.Write([]byte("testing"))
+	hashed := h.Sum(nil)
+
+	// Generated with `echo -n testing | openssl dgst -sign key.pem -sigopt rsa_padding_mode:pss -sha256 > sig`
+	sig := []byte{
+		0x95, 0x59, 0x6f, 0xd3, 0x10, 0xa2, 0xe7, 0xa2, 0x92, 0x9d,
+		0x4a, 0x07, 0x2e, 0x2b, 0x27, 0xcc, 0x06, 0xc2, 0x87, 0x2c,
+		0x52, 0xf0, 0x4a, 0xcc, 0x05, 0x94, 0xf2, 0xc3, 0x2e, 0x20,
+		0xd7, 0x3e, 0x66, 0x62, 0xb5, 0x95, 0x2b, 0xa3, 0x93, 0x9a,
+		0x66, 0x64, 0x25, 0xe0, 0x74, 0x66, 0x8c, 0x3e, 0x92, 0xeb,
+		0xc6, 0xe6, 0xc0, 0x44, 0xf3, 0xb4, 0xb4, 0x2e, 0x8c, 0x66,
+		0x0a, 0x37, 0x9c, 0x69,
+	}
+
+	if err := VerifyPSS(&rsaPrivateKey.PublicKey, hash, hashed, sig, nil); err != nil {
+		t.Error(err)
+	}
 }
