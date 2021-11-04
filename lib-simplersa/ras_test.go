@@ -8,22 +8,6 @@ import (
 	"testing"
 )
 
-func TestKeyGenerationSimple(t *testing.T) {
-	size := 2048
-	if testing.Short() {
-		size = 128
-	}
-	priv, err := GenerateKey(rand.Reader, size)
-	if err != nil {
-		t.Errorf("failed to generate key")
-	}
-	if bits := priv.N.BitLen(); bits != size {
-		t.Errorf("key too short (%d vs %d)", bits, size)
-	}
-	t.Log(priv.N.BitLen())
-	//testKeyBasics(t, priv)
-}
-
 func TestKeyGeneration(t *testing.T) {
 	size := 1024
 	if testing.Short() {
