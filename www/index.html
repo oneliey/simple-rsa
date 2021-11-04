@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <!--    <meta name="viewport" content="width=device-width, initial-scale=1">-->
+    <meta name="description" content="A simple app for RSA algorithm">
+    <meta name="author" content="oneliey">
+    <title>Simple-RSA</title>
+
+<!--    <link rel="canonical" href="https://getbootstrap.com/docs/5.1/examples/cheatsheet/">-->
+
+    <!-- Bootstrap core CSS -->
+    <link href="./assets/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .bd-placeholder-img {
+            font-size: 1.125rem;
+            text-anchor: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
+        @media (min-width: 768px) {
+            .bd-placeholder-img-lg {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+
+    <!-- Custom styles for this template -->
+    <!--    <link href="cheatsheet.css" rel="stylesheet">-->
+</head>
+<body class="bg-light" onload=start()>
+
+<header class="bd-header bg-dark px-1 py-2 d-flex align-items-stretch border-bottom border-dark">
+    <div class="container-fluid d-flex align-items-center">
+        <h1 class="d-flex align-items-center fs-4 text-white m-1">
+            <img src="./assets/brand/bootstrap-logo-white.svg" width="38" height="30" class="me-3" alt="Bootstrap">
+            Simple RSA Algorithm
+        </h1>
+        <!--        <a href="../examples/cheatsheet-rtl/" class="ms-auto link-light" hreflang="ar">RTL cheatsheet</a>-->
+    </div>
+</header>
+
+<div class="container-xl px-3 py-1 overflow-auto ">
+<div class="row px-5">
+    <form class="col-8 px-4">
+        <div id="priv-N" class="my-3">
+            <label for="textareaN" class="form-label">📢 N: Public Modulus (dec | hex):</label>
+            <div class="row gx-3">
+                <div class="col">
+                    <textarea class="form-control" id="textareaN" rows="6" disabled readonly></textarea>
+                    <!--                    <input type="text" class="form-control" id="textN" style="height: 80px" disabled readonly>-->
+                </div>
+                <div class="col">
+                    <textarea class="form-control" id="textareaNHex" rows="6" disabled readonly></textarea>
+                    <!--                    <input type="text" class="form-control col" id="inputNHex" style="height: 80px" disabled readonly>-->
+                </div>
+            </div>
+        </div>
+
+        <div id="priv-E" class="my-3">
+            <label for="inputE" class="form-label">📢 E: Public Exponent (dec | hex):</label>
+            <div class="row gx-3">
+                <div class="col">
+                    <input type="text" class="form-control" id="inputE" disabled readonly>
+                </div>
+                <div class="col">
+                    <input type="text" class="form-control" id="inputEHex" disabled readonly>
+                </div>
+            </div>
+        </div>
+
+        <div id="pub-D" class="my-3">
+            <label for="textareaD" class="form-label">㊙️ D: Private Exponent (dec | hex):</label>
+            <div class="row gx-3">
+                <div class="col">
+                    <textarea class="form-control" id="textareaD" rows="5" disabled readonly></textarea>
+                </div>
+                <div class="col">
+                    <textarea class="form-control" id="textareaDHex" rows="5" disabled readonly></textarea>
+                </div>
+            </div>
+        </div>
+        <!--        <div class="my-4 form-floating">-->
+
+        <!--Plaintext & Ciphertext-->
+        <div id="textarea" class="my-4 row">
+            <div class="col">
+                <label for="textareaMsg" class="form-label">📝 Message:</label>
+                <textarea class="form-control" id="textareaMsg" rows="7" value=""></textarea>
+            </div>
+
+            <div class="col">
+                <label for="textareaCiphertext" class="form-label">🔐 Ciphertext (hex):</label>
+                <textarea class="form-control" id="textareaCiphertext" rows="7"></textarea>
+            </div>
+
+            <div class="col">
+                <label for="textareaSignature" class="form-label">🔏 Signature (hex):</label>
+                <textarea class="form-control" id="textareaSignature" rows="7"></textarea>
+            </div>
+        </div>
+
+        <div id="result" class="my-4">
+            <label for="textareaResult" class="form-label">🧮 Calculate Result:</label>
+            <textarea class="form-control" id="textareaResult" rows="5" readonly></textarea>
+        </div>
+
+    </form>
+
+    <form class="col-4 px-4 py-4 ">
+        <div id="RSAKey" class="mb-5">
+            <div id="RSAKeyBits" class="row my-3 g-2 align-items-center">
+                <label for="selectKeyBits" class="col-sm-4 col-form-label">Bits:</label>
+                <div class="col-sm">
+                    <select class="form-select" id="selectKeyBits">
+                        <option value="128">128</option>
+                        <option value="512">512</option>
+                        <option value="1024">1024</option>
+                        <option selected value="2048">2048</option>
+                        <option value="4096">4096</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="RSAKeyNPrimes" class="row my-3 g-2 align-items-center">
+                <label for="selectKeyBits" class="col-sm-4 col-form-label">nPrimes:</label>
+                <div class="col-sm">
+                    <input type="number" class="form-control" id="inputNPrimes" value=2 required>
+                </div>
+            </div>
+
+            <div class="my-3 d-grid">
+                <button type="button" class="btn btn-primary" id="btnGenerate">💫 Generate Key</button>
+            </div>
+        </div>
+
+        <div id="encryptDecrypt" class="my-5 ">
+            <div id="PKCS" class="my-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="radioPKCS" id="radioPKCSv15" value="1"
+                           checked>
+                    <label class="form-check-label" for="radioPKCSv15">EME-PKCS1-v1_5</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="radioPKCS" id="radioPKCSv22" value="2">
+                    <label class="form-check-label" for="radioPKCSv22">EME-OAEP (v2.2)</label>
+                </div>
+                <div class="row my-1 g-2 align-items-center">
+                    <label for="selectKeyBits" class="col-sm-4 col-form-label">OAEP Label:</label>
+                    <div class="col-sm">
+<!--                        <label for="inputOAEPLabel" class="visually-hidden">nil</label>-->
+                        <input type="text" class="form-control" id="inputOAEPLabel">
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="EncryptDecryptButtons" class="my-3 d-grid gap-3">
+                <button type="button" class="btn btn-primary" id="btnEncrypt">🔒 Encrypt</button>
+                <button type="button" class="btn btn-primary" id="btnDecrypt">🔓 Decrypt</button>
+                <button type="button" class="btn btn-secondary" id="btnCopyCipher">Copy To Ciphertext</button>
+            </div>
+        </div>
+
+        <div id="signVerify" class="my-5 ">
+            <div id="PKCS2" class="my-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="radioSignPKCS" id="radioSignPKCSv15" value="1"
+                           checked>
+                    <label class="form-check-label" for="radioPKCSv15">EMSA-PKCS1-v1_5</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="radioSignPKCS" id="radioSignPKCSv22" value="2">
+                    <label class="form-check-label" for="radioPKCSv22">EMSA-PSS (v2.2)</label>
+                </div>
+                <div class="row my-1 g-2 align-items-center">
+                    <label for="selectKeyBits" class="col-sm-4 col-form-label">PSS Salt Len:</label>
+                    <div class="col-sm">
+                        <input type="text" class="form-control" id="inputPSSSaltLen">
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="SignVerifyButtons" class="my-3 d-grid gap-3">
+                <button type="button" class="btn btn-success" id="btnSign">🖋️ Sign</button>
+                <button type="button" class="btn btn-success" id="btnVerify">🔍 Verify</button>
+                <button type="button" class="btn btn-secondary" id="btnCopySig">Copy To Signature</button>
+            </div>
+        </div>
+
+    </form>
+</div>
+</div>
+
+<script>
+    const textN = document.querySelector("#textareaN");
+    const textNHex = document.querySelector("#textareaNHex");
+    const textD = document.querySelector("#textareaD");
+    const textDHex = document.querySelector("#textareaDHex");
+    const inputE = document.querySelector("#inputE");
+    const inputEHex = document.querySelector("#inputEHex");
+
+    const selectKeyBits = document.querySelector("#selectKeyBits");
+    const inputNPrimes = document.querySelector("#inputNPrimes");
+    const btnGenerate = document.querySelector('#btnGenerate');
+
+    const textareaMsg = document.querySelector("#textareaMsg");
+    const textareaCiphertext = document.querySelector("#textareaCiphertext");
+    const textareaSignature = document.querySelector("#textareaSignature");
+    const textareaResult = document.querySelector("#textareaResult");
+
+    const radioPKCSv22 = document.querySelector("#radioPKCSv22");
+    const inputOAEPLabel = document.querySelector("#inputOAEPLabel"); // todo:
+
+    const btnEncrypt = document.querySelector('#btnEncrypt');
+    const btnDecrypt = document.querySelector('#btnDecrypt');
+    const btnCopyCipher = document.querySelector('#btnCopyCipher');
+
+    const radioSignPKCSv22 = document.querySelector("#radioSignPKCSv22");
+    const inputPSSSaltLen = document.querySelector("#inputPSSSaltLen");
+
+    const btnSign = document.querySelector('#btnSign');
+    const btnVerify = document.querySelector('#btnVerify');
+    const btnCopySig = document.querySelector('#btnCopySig');
+
+    var N, D, E, Msg = ""
+    textareaMsg.value = "A simple app for RSA"
+    // var Nhex = "", Dhex = "", Ehex = "", Msghex = ""
+
+    // We use async/await because Go functions are asynchronous
+    const render = async () => {
+        textN.value = `${await getN(false)}`
+        textNHex.value = `${await getN(true)}`
+        textD.value = `${await getD(false)}`;
+        textDHex.value = `${await getD(true)}`;
+        inputE.value = `${await getE(false)}`;
+        inputEHex.value = `${await getE(true)}`;
+    };
+    btnGenerate.addEventListener('click', async () => {
+        // // console.log("btnGenerate clicked")
+        var key_nprimes = Number(inputNPrimes.value);
+        var key_bits = Number(selectKeyBits.value);
+        await generateRSAKey(key_nprimes, key_bits);
+        N = `${await getN(false)}`;
+        D = `${await getD(false)}`;
+        E = `${await getE(false)}`;
+        await render();
+    });
+
+
+    btnEncrypt.addEventListener('click', async () => {
+        textareaResult.value = `${await encrypt(textareaMsg.value, radioPKCSv22.checked, inputOAEPLabel.value)}`;
+    });
+
+    btnDecrypt.addEventListener('click', async () => {
+        textareaResult.value = `${await decrypt(textareaCiphertext.value, radioPKCSv22.checked, inputOAEPLabel.value)}`;
+    });
+
+    btnCopyCipher.addEventListener('click', async () => {
+        textareaCiphertext.value = textareaResult.value
+    })
+
+    btnSign.addEventListener('click', async () => {
+        textareaResult.value = `${await sign(textareaMsg.value, radioSignPKCSv22.checked)}`;
+    });
+
+    btnVerify.addEventListener('click', async () => {
+        textareaResult.value = `${await verify(textareaMsg.value, textareaSignature.value, radioSignPKCSv22.checked)}`;
+        // var verifyResult = `${await verify(textareaMsg.value, textareaSignature.value, radioSignPKCSv22.checked)}`;
+        // var isTrueSet = (verifyResult === 'true');
+        // if (isTrueSet) {
+        //     textareaResult.value = "✔️ Signature is Correct 🎉🎉🎉 "
+        // } else {
+        //     textareaResult.value = "❌ Signature is Wrong ⛔⛔⛔ "
+        // }
+    });
+
+    btnCopySig.addEventListener('click', async () => {
+        textareaSignature.value = textareaResult.value
+    })
+
+    // render();
+</script>
+
+<script src="./assets/dist/js/bootstrap.bundle.min.js"></script>
+<!--<script src="cheatsheet.js"></script>-->
+</body>
+</html>
