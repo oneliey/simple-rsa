@@ -13,19 +13,19 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	rsa "simple-rsa/lib-simplersa"
+	simplersa "simple-rsa/lib-simplersa"
 )
 
 //go:embed www
 var fs embed.FS
 
 var key_bits, key_nprimes int
-var priv *rsa.PrivateKey
+var priv *simplersa.PrivateKey
 
 func GenerateRSAKey(nprimes, bits int) {
 	var err error
 	key_nprimes, key_bits = nprimes, bits
-	priv, err = rsa.GenerateMultiPrimeKey(rand.Reader, nprimes, bits)
+	priv, err = simplersa.GenerateMultiPrimeKey(rand.Reader, nprimes, bits)
 	if err != nil {
 		return
 	}
@@ -102,9 +102,9 @@ func Encrypt(plaintext string, isUseOAEP bool, OAEPLabel string, hashName string
 		if OAEPLabel != "" {
 			label = []byte(OAEPLabel)
 		}
-		ciphertext, err = rsa.EncryptOAEP(hash.New(), rng, &priv.PublicKey, msg, label)
+		ciphertext, err = simplersa.EncryptOAEP(hash.New(), rng, &priv.PublicKey, msg, label)
 	} else {
-		ciphertext, err = rsa.EncryptPKCS1v15(rng, &priv.PublicKey, msg)
+		ciphertext, err = simplersa.EncryptPKCS1v15(rng, &priv.PublicKey, msg)
 	}
 	if err != nil {
 		return ErrEncrypt
@@ -132,9 +132,9 @@ func Decrypt(c string, isUseOAEP bool, OAEPLabel string, hashName string) string
 		if OAEPLabel != "" {
 			label = []byte(OAEPLabel)
 		}
-		plaintext, err = rsa.DecryptOAEP(hash.New(), rng, priv, ciphertext, label)
+		plaintext, err = simplersa.DecryptOAEP(hash.New(), rng, priv, ciphertext, label)
 	} else {
-		plaintext, err = rsa.DecryptPKCS1v15(rng, priv, ciphertext)
+		plaintext, err = simplersa.DecryptPKCS1v15(rng, priv, ciphertext)
 	}
 	if err != nil {
 		return ErrDecrypt
@@ -160,9 +160,9 @@ func Sign(plaintext string, hashName string, isUsePSS bool, saltLength int) stri
 		if saltLength < -1 {
 			saltLength = 0
 		}
-		signature, err = rsa.SignPSS(rng, priv, hash, digest[:], &rsa.PSSOptions{SaltLength: saltLength, Hash: hash})
+		signature, err = simplersa.SignPSS(rng, priv, hash, digest[:], &simplersa.PSSOptions{SaltLength: saltLength, Hash: hash})
 	} else {
-		signature, err = rsa.SignPKCS1v15(rng, priv, hash, digest[:])
+		signature, err = simplersa.SignPKCS1v15(rng, priv, hash, digest[:])
 	}
 	if err != nil {
 		return ErrSign
@@ -190,9 +190,9 @@ func Verify(plaintext string, signature string, hashName string, isUsePSS bool, 
 		if saltLength < -1 {
 			saltLength = 0
 		}
-		err = rsa.VerifyPSS(&priv.PublicKey, hash, digest[:], sig, &rsa.PSSOptions{SaltLength: saltLength, Hash: hash})
+		err = simplersa.VerifyPSS(&priv.PublicKey, hash, digest[:], sig, &simplersa.PSSOptions{SaltLength: saltLength, Hash: hash})
 	} else {
-		err = rsa.VerifyPKCS1v15(&priv.PublicKey, hash, digest[:], sig)
+		err = simplersa.VerifyPKCS1v15(&priv.PublicKey, hash, digest[:], sig)
 	}
 	if err != nil {
 		return VerifyFalse
@@ -206,7 +206,7 @@ func main() {
 		args = append(args, "--class=Lorca")
 	}
 
-	ui, err := lorca.New("", "", 800, 600, args...)
+	ui, err := lorca.New("", "", 1200, 800, args...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -238,13 +238,6 @@ func main() {
 	defer ln.Close()
 	go http.Serve(ln, http.FileServer(http.FS(fs)))
 	ui.Load(fmt.Sprintf("http://%s/www", ln.Addr()))
-
-	// You may use console.log to debug your JS code, it will be printed via
-	// log.Println(). Also exceptions are printed in a similar manner.
-	ui.Eval(`
-		console.log("Hello, world!");
-		console.log('Multiple values:', [1, false, {"x":5}]);
-	`)
 
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)
