@@ -114,31 +114,34 @@
     <form class="col-4 px-4 py-4 ">
         <div id="RSAKey" class="mb-5">
             <div id="RSAKeyOptions" class="my-4">
-                <div id="RSAKeyBits" class="row my-3 g-2 align-items-center">
-                    <label for="selectKeyBits" class="col-sm-4 col-form-label">Bits:</label>
-                    <select class="form-select col-sm" id="selectKeyBits">
-                        <option value="64">64</option>
-                        <option value="128">128</option>
-                        <option value="512">512</option>
-                        <option value="1024">1024</option>
-                        <option selected value="2048">2048</option>
-                        <option value="4096">4096</option>
-                    </select>
-                </div>
-                <div id="RSAKeyNPrimes" class="row my-3 g-2 align-items-center">
-                    <label for="selectKeyBits" class="col-sm-4 col-form-label">nPrimes:</label>
-                    <input type="number" class="form-control col-sm" id="inputNPrimes" value=2 required>
+                <div class="row g-2">
+                    <div id="RSAKeyBits" class="col-xl form-floating">
+                        <select class="form-select " id="selectKeyBits">
+                            <option value="64">64</option>
+                            <option value="128">128</option>
+                            <option value="512">512</option>
+                            <option value="1024">1024</option>
+                            <option selected value="2048">2048</option>
+                            <option value="4096">4096</option>
+                        </select>
+                        <label for="selectKeyBits" class="col-form-label">Bits</label>
+                    </div>
+                    <div id="RSAKeyNPrimes" class="col-xl form-floating">
+                        <input type="number" class="form-control" id="inputNPrimes" value=2 required>
+                        <label for="selectKeyBits" class="col-form-label">nPrimes</label>
+                    </div>
                 </div>
             </div>
 
-            <div id="RSAKayButtons" class="my-3 d-grid">
+            <div id="RSAKayButtons" class="my-3 d-grid gap-3">
                 <button type="button" class="btn btn-danger" id="btnGenerate">💫 Generate Key</button>
+                <button type="button" class="btn btn-secondary" id="btnResetKey">🗑️ Reset Key</button>
             </div>
         </div>
 
         <div id="EncryptDecrypt" class="my-5">
             <div id="EncryptDecryptOptions" class="my-4">
-                <div id="edStandards" class="my-2">
+                <div id="edSchemes" class="my-2">
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="radioPKCS" id="radioPKCSv15" value="1" checked>
                         <label class="form-check-label" for="radioPKCSv15">EME-PKCS1-v1_5</label>
@@ -148,18 +151,20 @@
                         <label class="form-check-label" for="radioPKCSv22">EME-OAEP (v2.2)</label>
                     </div>
                 </div>
-                <div id="edOAEPLabel" class="row my-2 g-2 align-items-center">
-                    <label for="selectKeyBits" class="col-sm-4 col-form-label">OAEP Label:</label>
-                    <input type="text" class="form-control col-sm" id="inputOAEPLabel">
-                </div>
-                <div id="edHashFunc" class="row my-3 g-2 align-items-center">
-                    <label for="selectEDHash" class="col-sm-4 col-form-label">Hash Func:</label>
-                    <select class="form-select col-sm" id="selectEDHash">
-                        <option value="MD5">MD5</option>
-                        <option value="SHA-1">SHA-1</option>
-                        <option selected value="SHA-256">SHA-256</option>
-                        <option value="SHA-512">SHA-512</option>
-                    </select>
+                <div class="row g-2">
+                    <div id="edOAEPLabel" class="col-xl form-floating">
+                        <input type="text" class="form-control" id="inputOAEPLabel">
+                        <label for="selectKeyBits" class="col-form-label">OAEP Label</label>
+                    </div>
+                    <div id="edHashFunc" class="col-xl form-floating">
+                        <select class="form-select" id="selectEDHash">
+                            <option value="MD5">MD5</option>
+                            <option value="SHA-1">SHA-1</option>
+                            <option selected value="SHA-256">SHA-256</option>
+                            <option value="SHA-512">SHA-512</option>
+                        </select>
+                        <label for="selectEDHash" class="col-form-label">Hash Function</label>
+                    </div>
                 </div>
             </div>
 
@@ -170,9 +175,9 @@
             </div>
         </div>
 
-        <div id="SignVerify" class="mt-5">
+        <div id="SignVerify" class="my-5">
             <div id="SignVerifyOptions" class="my-4">
-                <div id="svStandards" class="my-3">
+                <div id="svSchemes" class="my-3">
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="radioSignPKCS" id="radioSignPKCSv15" value="1"
                                checked>
@@ -183,19 +188,21 @@
                         <label class="form-check-label" for="radioPKCSv22">EMSA-PSS (v2.2)</label>
                     </div>
                 </div>
-                <div id="svHashFunc" class="row my-3 g-2 align-items-center">
-                    <label for="selectSVHash" class="col-sm-4 col-form-label">Hash Func:</label>
-                    <select class="form-select col-sm" id="selectSVHash">
-                        <option value="MD5">MD5</option>
-                        <option value="SHA-1">SHA-1</option>
-                        <option selected value="SHA-256">SHA-256</option>
-                        <option value="SHA-512">SHA-512</option>
-                        <option value="MD5-SHA1">MD5+SHA1</option>
-                    </select>
-                </div>
-                <div id="svSaltLen" class="row my-3 g-2 align-items-center">
-                    <label for="inputPSSSaltLen" class="col-sm-4 col-form-label">PSS Salt Len:</label>
-                    <input type="number" class="form-control col-sm" id="inputPSSSaltLen" value="0">
+                <div class="row g-2">
+                    <div id="svHashFunc" class="col-xl form-floating">
+                        <select class="form-select col-sm" id="selectSVHash">
+                            <option value="MD5">MD5</option>
+                            <option value="SHA-1">SHA-1</option>
+                            <option selected value="SHA-256">SHA-256</option>
+                            <option value="SHA-512">SHA-512</option>
+                            <option value="MD5-SHA1">MD5+SHA1</option>
+                        </select>
+                        <label for="selectSVHash" class="">Hash Function</label>
+                    </div>
+                    <div id="svSaltLen" class="col-xl form-floating">
+                        <input type="number" class="form-control col-sm" id="inputPSSSaltLen" value="0">
+                        <label for="inputPSSSaltLen" class="">PSS Salt Length</label>
+                    </div>
                 </div>
             </div>
 
@@ -206,6 +213,7 @@
             </div>
         </div>
 
+<!--        <div id="AllOperate" class="my-5"-->
     </form>
 </div>
 </div>
@@ -229,6 +237,7 @@
     const selectKeyBits = document.querySelector("#selectKeyBits");
     const inputNPrimes = document.querySelector("#inputNPrimes");
     const btnGenerate = document.querySelector('#btnGenerate');
+    const btnResetKey = document.querySelector('#btnResetKey');
 
     // Encrypt & Decrypt Options
     const radioPKCSv22 = document.querySelector("#radioPKCSv22");
@@ -273,6 +282,12 @@
         await render();
     });
 
+    btnResetKey.addEventListener('click', async() => {
+        await resetRSAKey();
+        textareaResult.value = ""
+        await render()
+    })
+
     btnEncrypt.addEventListener('click', async () => {
         textareaResult.value = `${await encrypt(
             textareaMsg.value,
@@ -312,13 +327,6 @@
             radioSignPKCSv22.checked,
             Number(inputPSSSaltLen.value)
         )}`;
-        // var verifyResult = `${await verify(textareaMsg.value, textareaSignature.value, radioSignPKCSv22.checked)}`;
-        // var isTrueSet = (verifyResult === 'true');
-        // if (isTrueSet) {
-        //     textareaResult.value = "✔️ Signature is Correct 🎉🎉🎉 "
-        // } else {
-        //     textareaResult.value = "❌ Signature is Wrong ⛔⛔⛔ "
-        // }
     });
 
     btnCopySig.addEventListener('click', async () => {

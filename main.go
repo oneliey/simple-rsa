@@ -32,6 +32,10 @@ func GenerateRSAKey(nprimes, bits int) {
 	//return priv.N.String(), priv.D.String(), string(priv.E)
 }
 
+func ResetRSAKey() {
+	priv = nil
+}
+
 func GetN(hex bool) string {
 	if priv == nil {
 		return ""
@@ -201,6 +205,7 @@ func Verify(plaintext string, signature string, hashName string, isUsePSS bool, 
 }
 
 func main() {
+	log.Printf("OS: %s, Arch: %s\n", runtime.GOOS, runtime.GOARCH)
 	args := []string{}
 	if runtime.GOOS == "linux" {
 		args = append(args, "--class=Lorca")
@@ -222,6 +227,7 @@ func main() {
 	ui.Bind("getD", GetD)
 	ui.Bind("getE", GetE)
 	ui.Bind("generateRSAKey", GenerateRSAKey)
+	ui.Bind("resetRSAKey", ResetRSAKey)
 	ui.Bind("encrypt", Encrypt)
 	ui.Bind("decrypt", Decrypt)
 	ui.Bind("sign", Sign)

@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"math/big"
 	"testing"
 )
@@ -174,13 +175,64 @@ var rsaPrivateKey = &PrivateKey{
 	},
 }
 
-func Benchmark2048GenerateKey(b *testing.B) {
-	size := 2048
-	if testing.Short() {
-		size = 128
+func BenchmarkGenerateKey(b *testing.B) {
+	var bitsNPrimes = []struct {
+		bits, n int
+	}{
+		{512, 2},
+		{1024, 2},
+		{2048, 2},
+		{2048, 3},
+		{4096, 2},
 	}
-	for i := 0; i < b.N; i++ {
-		GenerateKey(rand.Reader, size)
+	for _, test := range bitsNPrimes {
+		testName := fmt.Sprintf("S=%d/%d", test.bits, test.n)
+		b.Run(testName, func(b1 *testing.B) {
+			for i := 0; i < b1.N; i++ {
+				GenerateMultiPrimeKey(rand.Reader, test.n, test.bits)
+			}
+		})
+	}
+}
+
+func Benchmark4096GenerateKey(b *testing.B) {
+	var bitsNPrimes = []struct {
+		bits, n int
+	}{
+		{4096, 2},
+		{4096, 3},
+		{4096, 4},
+		{4096, 5},
+		{4096, 6},
+		{4096, 7},
+		{4096, 8},
+	}
+	for _, test := range bitsNPrimes {
+		testName := fmt.Sprintf("S=%d/%d", test.bits, test.n)
+		b.Run(testName, func(b1 *testing.B) {
+			for i := 0; i < b1.N; i++ {
+				GenerateMultiPrimeKey(rand.Reader, test.n, test.bits)
+			}
+		})
+	}
+}
+
+func Benchmark2048GenerateKey(b *testing.B) {
+	var bitsNPrimes = []struct {
+		bits, n int
+	}{
+		{2048, 2},
+		{2048, 3},
+		{2048, 4},
+		{2048, 5},
+	}
+	for _, test := range bitsNPrimes {
+		testName := fmt.Sprintf("S=%d/%d", test.bits, test.n)
+		b.Run(testName, func(b1 *testing.B) {
+			for i := 0; i < b1.N; i++ {
+				GenerateMultiPrimeKey(rand.Reader, test.n, test.bits)
+			}
+		})
 	}
 }
 
@@ -191,8 +243,95 @@ func BenchmarkRSA2048Decrypt(b *testing.B) {
 
 	b.StartTimer()
 
+	//for
+	//b.Run(testName, )
+
 	for i := 0; i < b.N; i++ {
 		decrypt(nil, test2048Key, c)
+	}
+}
+
+func BenchmarkRSADecrypt(b *testing.B) {
+	var testCases = []struct {
+		nprimes, bits int
+		precomputed   bool
+	}{
+		//{2, 2048, true},
+		//{3, 2048, true},
+		//{4, 2048, true},
+
+		{2, 4096, true},
+		{3, 4096, true},
+		{4, 4096, true},
+	}
+	for _, t := range testCases {
+		nprimes, bits := t.nprimes, t.bits
+		testKey, _ := GenerateMultiPrimeKey(rand.Reader, nprimes, bits)
+		testKey.Precomputed = PrecomputedValues{}
+		if bits < 10 {
+			bits += 10
+		}
+		m, _ := rand.Prime(rand.Reader, bits-10)
+		c := encrypt(&testKey.PublicKey, m)
+
+		// Simple
+		testName := fmt.Sprintf("D=Simple/%d/%d", t.bits, t.nprimes)
+		b.Run(testName, func(bs *testing.B) {
+			for i := 0; i < bs.N; i++ {
+				decrypt(nil, testKey, c)
+			}
+		})
+		if t.precomputed == false {
+			continue
+		}
+		testKey.Precompute()
+		// CRT
+		testName = fmt.Sprintf("D=CRT/%d/%d", t.nprimes, t.bits)
+		b.Run(testName, func(bc *testing.B) {
+
+			for i := 0; i < bc.N; i++ {
+				decrypt(nil, testKey, c)
+			}
+		})
+	}
+}
+
+func BenchmarkRSAEncrypt(b *testing.B) {
+	b.StopTimer()
+	var testCases = []struct {
+		nprimes, bits int
+	}{
+		{2, 512},
+		{2, 1024},
+		{2, 2048},
+		{2, 4096},
+		//{2, 2048},
+		//{2, 2048},
+		//{2, 2048},
+	}
+	m, _ := rand.Prime(rand.Reader, 4100)
+	//testKey, _ := GenerateMultiPrimeKey(rand.Reader, 2, 2048)
+	for _, t := range testCases {
+		testName := fmt.Sprintf("E=%d/%d", t.bits, t.nprimes)
+		testKey, _ := GenerateMultiPrimeKey(rand.Reader, t.nprimes, t.bits)
+		b.Run(testName, func(bs *testing.B) {
+			bs.StartTimer()
+			for i := 0; i < bs.N; i++ {
+				encrypt(&testKey.PublicKey, m)
+			}
+		})
+	}
+}
+
+func BenchmarkRSA2048Encrypt(b *testing.B) {
+	b.StopTimer()
+
+	m := fromBase10("8472002792838218989464636159316973636630013835787202418124758118372358261975764365740026024610403138425986214991379012696600761514742817632790916315594342398720903716529235119816755589383377471752116975374952783629225022962092351886861518911824745188989071172097120352727368980275252089141512321893536744324822590480751098257559766328893767334861211872318961900897793874075248286439689249972315699410830094164386544311554704755110361048571142336148077772023880664786019636334369759624917224888206329520528064315309519262325023881707530002540634660750469137117568199824615333883758410040459705787022909848740188613313")
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		encrypt(&test2048Key.PublicKey, m)
 	}
 }
 
