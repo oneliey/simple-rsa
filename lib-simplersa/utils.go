@@ -4,6 +4,7 @@ import (
 	//crypto_rand "crypto/rand"
 	"errors"
 	"io"
+	"log"
 	"math/big"
 	"math/rand"
 )
@@ -33,10 +34,13 @@ func randomPrime(random io.Reader, bits int) (p *big.Int, err error) {
 
 	bigMod := new(big.Int)
 
+	forCount := 0
+	//defer log.Println("randomPrime: Count", forCount)
 	for {
 		if _, err = io.ReadFull(random, pBytes); err != nil {
 			return nil, err
 		}
+		forCount++
 
 		pBytes[0] &= uint8(int(1<<b) - 1)
 
@@ -58,23 +62,65 @@ func randomPrime(random io.Reader, bits int) (p *big.Int, err error) {
 		// Make sure p is odd
 		pBytes[len(pBytes)-1] |= 0x01
 
-		p.SetBytes(pBytes)
+		pp := new(big.Int).SetBytes(pBytes)
 
-		bigMod = bigMod.Mod(p, smallPrimesProduct)
+		bigMod = bigMod.Mod(pp, smallPrimesProduct)
 		uintMod := bigMod.Uint64()
 
-		for delta := uint64(0); delta < 1<<20; delta += 2 {
+		//ansCh := make(chan uint64)
+		controlCh := make(chan bool, 8)
+		goroutineCnt := 0
+		//for delta := uint64(0); delta < 1<<25; delta += 2 { // 1<<
+		//	select {
+		//	case ansDelta := <-ansCh:
+		//		//log.Println("ansDelta", ansDelta, "delta:", delta, "gr:", goroutineCnt)
+		//		p = new(big.Int).Add(pp, new(big.Int).SetUint64(ansDelta))
+		//		return
+		//	default:
+		//		m := uintMod + delta
+		//		if checkSmallPrime(m, bits) {
+		//			goroutineCnt ++
+		//			controlCh <- true
+		//			go func(d uint64, index int) {
+		//				x := new(big.Int).Add(pp, new(big.Int).SetUint64(d))
+		//				if x.BitLen() == bits && probablyPrime(x, 20) {
+		//					//log.Printf("#%v: %v", index, d)
+		//					ansCh <- d
+		//				}
+		//				<- controlCh
+		//			}(delta, goroutineCnt)
+		//		}
+		//	}
+		ansDelta := uint64(0)
+		isFind := false
+		for delta := uint64(0); delta < 1<<25; delta += 2 { // 1<<
+			if isFind {
+				log.Println("delta", delta, "ansDelta", ansDelta)
+				p = new(big.Int).Add(pp, new(big.Int).SetUint64(ansDelta))
+				return
+			}
+
 			m := uintMod + delta
 			if checkSmallPrime(m, bits) {
-				p.Add(p, new(big.Int).SetUint64(delta))
-				break
+				goroutineCnt++
+				controlCh <- true
+				go func(d uint64, index int) {
+					x := new(big.Int).Add(pp, new(big.Int).SetUint64(d))
+					if x.BitLen() == bits && probablyPrime(x, 20) {
+						log.Printf("#%v/%v: %v", index, goroutineCnt, d)
+						ansDelta = d
+						isFind = true
+					}
+					<-controlCh
+				}(delta, goroutineCnt)
 			}
 		}
 
 		//if p.ProbablyPrime(20) && p.BitLen() == bits {
-		if probablyPrime(p, 20) && p.BitLen() == bits {
-			return
-		}
+		//if p.BitLen() == bits && probablyPrime(p, 20) {
+		//	//log.Println("randomPrime: Count", forCount)
+		//	return
+		//}
 	}
 
 	return
@@ -129,6 +175,7 @@ func probablyPrimeMillerRabin(n *big.Int, testTimes int, force2 bool) bool {
 			x = x.Rand(rand, randMax).Add(x, bigTwo)
 		}
 		x = x.Exp(x, a, n)
+		//x = Pow(x, a, n)
 		if x.Cmp(bigOne) == 0 {
 			continue
 		}
