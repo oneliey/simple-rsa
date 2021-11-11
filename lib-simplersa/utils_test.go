@@ -108,7 +108,7 @@ func TestExgcd(t *testing.T) {
 	fmt.Printf("Calculate exgcd(%v, %v) = %v, x = %v, y = %v\n", a, b, d, &x, &y)
 }
 
-func TestRandomPrime(t *testing.T) {
+func TestRandomPrime1024(t *testing.T) {
 	if _, err := randomPrime(rand.Reader, 1); err == nil {
 		t.Errorf("Return no err when random prime with bits < 2")
 	}
@@ -118,6 +118,24 @@ func TestRandomPrime(t *testing.T) {
 	}
 
 	size, times := 1024, 100
+	if testing.Short() {
+		size = 128
+	}
+
+	for i := 0; i < times; i++ {
+		prime, err := randomPrime(rand.Reader, size)
+		if err != nil {
+			t.Errorf("failed to random a prime: %s", err)
+		} else {
+			if prime.ProbablyPrime(20) == false {
+				t.Errorf("the random number is not a prime")
+			}
+		}
+	}
+}
+
+func TestRandomPrime2048(t *testing.T) {
+	size, times := 2048, 100
 	if testing.Short() {
 		size = 128
 	}
@@ -173,28 +191,28 @@ func TestProbablyPrime(t *testing.T) {
 }
 
 func BenchmarkRandomPrime(b *testing.B) {
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		//randomPrime(rand.Reader, 128)
-		//randomPrime(rand.Reader, 1024)
-		randomPrime(rand.Reader, 2048)
-		//randomPrime(rand.Reader, 4096)
-		//if _, err := randomPrime(rand.Reader, 2048); err != nil {
-		//	b.Fatal("random prime err:", err)
-		//}
+	var primeBits = []int{128, 512, 1024, 2048, 3072}
+	for _, bit := range primeBits {
+		testName := fmt.Sprintf("P=%d", bit)
+		b.Run(testName, func(bs *testing.B) {
+			bs.StartTimer()
+			for i := 0; i < bs.N; i++ {
+				randomPrime(rand.Reader, bit)
+			}
+		})
 	}
 }
 
 func BenchmarkStdRandomPrime(b *testing.B) {
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		//rand.Prime(rand.Reader, 128)
-		//rand.Prime(rand.Reader, 1024)
-		rand.Prime(rand.Reader, 2048)
-		//rand.Prime(rand.Reader, 4096)
-		//if _, err := rand.Prime(rand.Reader, 2048); err != nil {
-		//	b.Fatal("random prime err:", err)
-		//}
+	var primeBits = []int{128, 512, 1024, 2048, 3072}
+	for _, bit := range primeBits {
+		testName := fmt.Sprintf("P=%d", bit)
+		b.Run(testName, func(bs *testing.B) {
+			bs.StartTimer()
+			for i := 0; i < bs.N; i++ {
+				rand.Prime(rand.Reader, bit)
+			}
+		})
 	}
 }
 
