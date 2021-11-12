@@ -123,6 +123,7 @@ func TestRandomPrime1024(t *testing.T) {
 	}
 
 	for i := 0; i < times; i++ {
+		ParaCalc = (i%2 == 0)
 		prime, err := randomPrime(rand.Reader, size)
 		if err != nil {
 			t.Errorf("failed to random a prime: %s", err)
@@ -139,8 +140,8 @@ func TestRandomPrime2048(t *testing.T) {
 	if testing.Short() {
 		size = 128
 	}
-
 	for i := 0; i < times; i++ {
+		ParaCalc = (i%2 == 0)
 		prime, err := randomPrime(rand.Reader, size)
 		if err != nil {
 			t.Errorf("failed to random a prime: %s", err)

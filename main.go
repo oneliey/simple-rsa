@@ -222,6 +222,11 @@ func Verify(plaintext string, signature string, hashName string, isUsePSS bool, 
 	return VerifyTrue
 }
 
+func ChangeParallel(state bool) {
+	log.Println("Parallel Mode:", state)
+	simplersa.ParaCalc = state
+}
+
 func main() {
 	log.Printf("OS: %s, Arch: %s\n", runtime.GOOS, runtime.GOARCH)
 	args := []string{}
@@ -252,6 +257,7 @@ func main() {
 	ui.Bind("decrypt", Decrypt)
 	ui.Bind("sign", Sign)
 	ui.Bind("verify", Verify)
+	ui.Bind("changeParallel", ChangeParallel)
 
 	// Load HTML.
 	// You may also use `data:text/html,<base64>` approach to load initial HTML,

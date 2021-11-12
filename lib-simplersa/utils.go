@@ -7,10 +7,13 @@ import (
 	"log"
 	"math/big"
 	"math/rand"
+	"runtime"
+	"sync"
 )
 
 var bigZero = big.NewInt(0)
 var bigOne = big.NewInt(1)
+var ParaCalc = false
 
 var smallPrimes = []uint8{
 	3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53,
@@ -23,6 +26,13 @@ func randomPrime(random io.Reader, bits int) (p *big.Int, err error) {
 	//return crypto_rand.Prime(random, bits)
 	if bits < 2 {
 		return nil, errors.New("simple_rsa: prime size must be at least 2-bit")
+	}
+
+	szMax := uint64(1 << 20)
+	sz := szMax
+	//grc := 1
+	if ParaCalc && bits > 512 {
+		sz = 100
 	}
 
 	b := uint(bits % 8)
@@ -67,62 +77,54 @@ func randomPrime(random io.Reader, bits int) (p *big.Int, err error) {
 		bigMod = bigMod.Mod(pp, smallPrimesProduct)
 		uintMod := bigMod.Uint64()
 
-		//ansCh := make(chan uint64)
-		controlCh := make(chan bool, 8)
-		goroutineCnt := 0
-		//for delta := uint64(0); delta < 1<<25; delta += 2 { // 1<<
-		//	select {
-		//	case ansDelta := <-ansCh:
-		//		//log.Println("ansDelta", ansDelta, "delta:", delta, "gr:", goroutineCnt)
-		//		p = new(big.Int).Add(pp, new(big.Int).SetUint64(ansDelta))
-		//		return
-		//	default:
-		//		m := uintMod + delta
-		//		if checkSmallPrime(m, bits) {
-		//			goroutineCnt ++
-		//			controlCh <- true
-		//			go func(d uint64, index int) {
-		//				x := new(big.Int).Add(pp, new(big.Int).SetUint64(d))
-		//				if x.BitLen() == bits && probablyPrime(x, 20) {
-		//					//log.Printf("#%v: %v", index, d)
-		//					ansCh <- d
-		//				}
-		//				<- controlCh
-		//			}(delta, goroutineCnt)
-		//		}
-		//	}
 		ansDelta := uint64(0)
 		isFind := false
-		for delta := uint64(0); delta < 1<<25; delta += 2 { // 1<<
-			if isFind {
-				log.Println("delta", delta, "ansDelta", ansDelta)
-				p = new(big.Int).Add(pp, new(big.Int).SetUint64(ansDelta))
-				return
-			}
 
-			m := uintMod + delta
-			if checkSmallPrime(m, bits) {
+		controlCh := make(chan struct{}, runtime.NumCPU())
+		//ctx, cancel := context.WithCancel(context.Background())
+		once := sync.Once{}
+		wg := sync.WaitGroup{}
+		goroutineCnt := 0
+
+		for l := uint64(0); l < szMax; {
+			select {
+			case controlCh <- struct{}{}:
+				wg.Add(1)
 				goroutineCnt++
-				controlCh <- true
-				go func(d uint64, index int) {
-					x := new(big.Int).Add(pp, new(big.Int).SetUint64(d))
-					if x.BitLen() == bits && probablyPrime(x, 20) {
-						log.Printf("#%v/%v: %v", index, goroutineCnt, d)
-						ansDelta = d
-						isFind = true
+				go func(l, r uint64, index int) {
+					defer wg.Done()
+					for delta := l; delta < r && isFind == false; delta += 2 {
+						m := uintMod + delta
+						if checkSmallPrime(m, bits) {
+							x := new(big.Int).Add(pp, new(big.Int).SetUint64(delta))
+							if isFind == false && x.BitLen() == bits && probablyPrime(x, 20) {
+								//log.Printf("#%v/%v: %v", index, goroutineCnt, delta)
+								once.Do(func() {
+									ansDelta = delta
+									isFind = true
+								})
+								<-controlCh
+								return
+							}
+						}
 					}
 					<-controlCh
-				}(delta, goroutineCnt)
+				}(l, l+sz, goroutineCnt)
+				l += sz
+			default:
+			}
+			if isFind {
+				break
 			}
 		}
+		wg.Wait()
 
-		//if p.ProbablyPrime(20) && p.BitLen() == bits {
-		//if p.BitLen() == bits && probablyPrime(p, 20) {
-		//	//log.Println("randomPrime: Count", forCount)
-		//	return
-		//}
+		log.Println("ansDelta", ansDelta, "using", goroutineCnt, "grc")
+		if isFind {
+			p = new(big.Int).Add(pp, new(big.Int).SetUint64(ansDelta))
+			return
+		}
 	}
-
 	return
 }
 

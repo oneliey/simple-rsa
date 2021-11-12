@@ -200,13 +200,14 @@ func Benchmark4096GenerateKey(b *testing.B) {
 		bits, n int
 	}{
 		{4096, 2},
-		{4096, 3},
-		{4096, 4},
-		{4096, 5},
-		{4096, 6},
-		{4096, 7},
-		{4096, 8},
+		//{4096, 3},
+		//{4096, 4},
+		//{4096, 5},
+		//{4096, 6},
+		//{4096, 7},
+		//{4096, 8},
 	}
+	ParaCalc = true
 	for _, test := range bitsNPrimes {
 		testName := fmt.Sprintf("S=%d/%d", test.bits, test.n)
 		b.Run(testName, func(b1 *testing.B) {
