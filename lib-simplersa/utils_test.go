@@ -190,8 +190,33 @@ func TestProbablyPrime(t *testing.T) {
 	}
 }
 
+func BenchmarkProbablyPrime(b *testing.B) {
+	b.StopTimer()
+	var primeBits = []int{128, 512, 1024, 2048}
+	var primes []struct {
+		bit int
+		p   *big.Int
+	}
+	for _, bit := range primeBits {
+		p, _ := rand.Prime(rand.Reader, bit)
+		primes = append(primes, struct {
+			bit int
+			p   *big.Int
+		}{bit: bit, p: p})
+	}
+	for _, P := range primes {
+		testName := fmt.Sprintf("P=%d", P.bit)
+		b.Run(testName, func(bs *testing.B) {
+			bs.StartTimer()
+			for i := 0; i < bs.N; i++ {
+				probablyPrime(P.p, 20)
+			}
+		})
+	}
+}
+
 func BenchmarkRandomPrime(b *testing.B) {
-	var primeBits = []int{128, 512, 1024, 2048, 3072}
+	var primeBits = []int{128, 512, 1024, 2048}
 	for _, bit := range primeBits {
 		testName := fmt.Sprintf("P=%d", bit)
 		b.Run(testName, func(bs *testing.B) {
