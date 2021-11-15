@@ -51,12 +51,32 @@
             <label for="textareaN" class="form-label">📢 N: Public Modulus (dec | hex):</label>
             <div class="row gx-3">
                 <div class="col">
-                    <textarea class="form-control" id="textareaN" rows="6" disabled readonly></textarea>
-                    <!--                    <input type="text" class="form-control" id="textN" style="height: 80px" disabled readonly>-->
+                    <textarea class="form-control my-1" id="textareaN" rows="6" disabled readonly></textarea>
                 </div>
                 <div class="col">
-                    <textarea class="form-control" id="textareaNHex" rows="6" disabled readonly></textarea>
-                    <!--                    <input type="text" class="form-control col" id="inputNHex" style="height: 80px" disabled readonly>-->
+                    <textarea class="form-control my-1" id="textareaNHex" rows="6" disabled readonly></textarea>
+                </div>
+            </div>
+            <!-- Modal -->
+            <div class="modal fade" id="primeListModal" tabindex="-1" aria-labelledby="primeModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="primeModalLabel">Prime List</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <ul class="list-group my-1" id="listPrimes">
+                                <li class="list-group-item text-break" >No Prime</li>
+                            </ul>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" id="btnDecPrimes">Decimal</button>
+                            <button type="button" class="btn btn-primary" id="btnHexPrimes">Hexadecimal</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -84,7 +104,6 @@
                 </div>
             </div>
         </div>
-        <!--        <div class="my-4 form-floating">-->
 
         <!--Plaintext & Ciphertext-->
         <div id="textarea" class="my-4 row">
@@ -113,7 +132,7 @@
 
     <form class="col-4 px-4 py-4 ">
         <div id="RSAKey" class="mb-5">
-            <div id="RSAKeyOptions" class="my-4">
+            <div id="RSAKeyOptions" class="mt-4">
                 <div class="row g-2">
                     <div id="RSAKeyBits" class="col-xl form-floating">
                         <select class="form-select " id="selectKeyBits">
@@ -131,10 +150,18 @@
                         <label for="selectKeyBits" class="col-form-label">nPrimes</label>
                     </div>
                 </div>
+                <div class="form-control-lg form-switch my-2">
+                    <input class="form-check-input" type="checkbox" role="switch" id="switchParallel">
+                    <label class="form-check-label px-2" for="switchParallel">Parallel Mode</label>
+                </div>
             </div>
 
-            <div id="RSAKayButtons" class="my-3 d-grid gap-3">
+            <div id="RSAKayButtons" class="mb-3 d-grid gap-3">
                 <button type="button" class="btn btn-danger" id="btnGenerate">💫 Generate Key</button>
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#primeListModal">
+                    📃 Primes of N
+                </button>
                 <button type="button" class="btn btn-secondary" id="btnResetKey">🗑️ Reset Key</button>
             </div>
         </div>
@@ -175,7 +202,7 @@
             </div>
         </div>
 
-        <div id="SignVerify" class="my-5">
+        <div id="SignVerify" class="mt-5">
             <div id="SignVerifyOptions" class="my-4">
                 <div id="svSchemes" class="my-3">
                     <div class="form-check form-check-inline">
@@ -226,6 +253,7 @@
     const textDHex = document.querySelector("#textareaDHex");
     const inputE = document.querySelector("#inputE");
     const inputEHex = document.querySelector("#inputEHex");
+    const listPrimes = document.querySelector("#listPrimes");
 
     // Input & Result
     const textareaMsg = document.querySelector("#textareaMsg");
@@ -236,13 +264,16 @@
     // Key Generate Options
     const selectKeyBits = document.querySelector("#selectKeyBits");
     const inputNPrimes = document.querySelector("#inputNPrimes");
+    const switchParallel = document.querySelector("#switchParallel");
     const btnGenerate = document.querySelector('#btnGenerate');
     const btnResetKey = document.querySelector('#btnResetKey');
+    const btnDecPrimes = document.querySelector('#btnDecPrimes');
+    const btnHexPrimes = document.querySelector('#btnHexPrimes');
 
     // Encrypt & Decrypt Options
     const radioPKCSv22 = document.querySelector("#radioPKCSv22");
     const inputOAEPLabel = document.querySelector("#inputOAEPLabel");
-    const selectEDHash = document.querySelector("#selectEDHash")
+    const selectEDHash = document.querySelector("#selectEDHash");
 
     const btnEncrypt = document.querySelector('#btnEncrypt');
     const btnDecrypt = document.querySelector('#btnDecrypt');
@@ -251,25 +282,42 @@
     // Sign & Verify Options
     const radioSignPKCSv22 = document.querySelector("#radioSignPKCSv22");
     const inputPSSSaltLen = document.querySelector("#inputPSSSaltLen");
-    const selectSVHash = document.querySelector("#selectSVHash")
+    const selectSVHash = document.querySelector("#selectSVHash");
 
     const btnSign = document.querySelector('#btnSign');
     const btnVerify = document.querySelector('#btnVerify');
     const btnCopySig = document.querySelector('#btnCopySig');
 
-    var N, D, E, Msg = ""
-    textareaMsg.value = "A simple app for RSA"
+    let N = "", D = "", E = "", Msg = "";
+    textareaMsg.value = "A simple app for RSA";
     // var Nhex = "", Dhex = "", Ehex = "", Msghex = ""
+
+    async function renderPrimeModal(isHex) {
+        listPrimes.innerHTML = '';
+        const primeList = `${await getPrimes(isHex)}`.split(',');
+        for (const p of primeList) {
+            listPrimes.innerHTML += '<li class="list-group-item text-break">' + p + '</li>';
+        }
+    };
 
     // We use async/await because Go functions are asynchronous
     const render = async () => {
-        textN.value = `${await getN(false)}`
-        textNHex.value = `${await getN(true)}`
+        textN.value = `${await getN(false)}`;
+        textNHex.value = `${await getN(true)}`;
         textD.value = `${await getD(false)}`;
         textDHex.value = `${await getD(true)}`;
         inputE.value = `${await getE(false)}`;
         inputEHex.value = `${await getE(true)}`;
+
+        await renderPrimeModal(false);
     };
+
+    // Render at beginning
+    render();
+
+    switchParallel.addEventListener('click', async () => {
+        await changeParallel(switchParallel.checked)
+    })
 
     btnGenerate.addEventListener('click', async () => {
         // // console.log("btnGenerate clicked")
@@ -284,9 +332,19 @@
 
     btnResetKey.addEventListener('click', async() => {
         await resetRSAKey();
-        textareaResult.value = ""
-        await render()
-    })
+        textareaResult.value = "";
+        await render();
+    });
+
+    btnDecPrimes.addEventListener('click', async() => {
+        if (N === "") return
+        await renderPrimeModal(false);
+    });
+
+    btnHexPrimes.addEventListener('click', async() => {
+        if (N === "") return
+        await renderPrimeModal(true);
+    });
 
     btnEncrypt.addEventListener('click', async () => {
         textareaResult.value = `${await encrypt(
@@ -307,8 +365,8 @@
     });
 
     btnCopyCipher.addEventListener('click', async () => {
-        textareaCiphertext.value = textareaResult.value
-    })
+        textareaCiphertext.value = textareaResult.value;
+    });
 
     btnSign.addEventListener('click', async () => {
         textareaResult.value = `${await sign(
@@ -330,9 +388,8 @@
     });
 
     btnCopySig.addEventListener('click', async () => {
-        textareaSignature.value = textareaResult.value
-    })
-
+        textareaSignature.value = textareaResult.value;
+    });
 </script>
 
 <script src="./assets/dist/js/bootstrap.bundle.min.js"></script>

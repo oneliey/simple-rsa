@@ -66,6 +66,24 @@ func GetE(hex bool) string {
 	return fmt.Sprintf("%v", priv.E)
 }
 
+func GetPrimes(hex bool) []string {
+	if priv == nil {
+		return []string{"Please Generate A RSA Key"}
+	}
+	var strPrimeList = []string{}
+
+	if hex {
+		for _, p := range priv.Primes {
+			strPrimeList = append(strPrimeList, fmt.Sprintf("0x%x", p))
+		}
+		return strPrimeList
+	}
+	for _, p := range priv.Primes {
+		strPrimeList = append(strPrimeList, p.String())
+	}
+	return strPrimeList
+}
+
 var (
 	ErrNoKey    = "Please Generate a RSA Key \U0001FA84\U0001FA84\U0001FA84"
 	ErrDecrypt  = "Decrypt Error 💢💢💢"
@@ -226,6 +244,8 @@ func main() {
 	ui.Bind("getN", GetN)
 	ui.Bind("getD", GetD)
 	ui.Bind("getE", GetE)
+	ui.Bind("getPrimes", GetPrimes)
+
 	ui.Bind("generateRSAKey", GenerateRSAKey)
 	ui.Bind("resetRSAKey", ResetRSAKey)
 	ui.Bind("encrypt", Encrypt)
