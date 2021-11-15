@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 # darwin/arm64
 GOOS=darwin GOARCH=arm64 go build -o ./bin/darwin/simpleRSA-darwin-arm64
