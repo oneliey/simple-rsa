@@ -1,3 +1,7 @@
+# Simple RSA 
+
+> Based on [lorca](https://github.com/zserge/lorca). Requires Chrome/Edge (Chromium >= 70) to be installed. 
+
 ## 1. 程序使用说明
 
 #### 1.1 图形界面
@@ -179,7 +183,7 @@ VerifyPSS
 
 此部分参考 golang 标准库 crypto/rsa@go1.17 中的测试文件。
 
-![image-20211115115734171](rsa-app.assets/image-20211115115734171-6948655.png)
+![image-20211115115734171](rsa-app.assets/test.png)
 
 #### 2.3 符合 PKCS#1 标准 
 
